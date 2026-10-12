@@ -1,119 +1,59 @@
 
-<div id="hundreds-activity">
-  <h3>Question 12: Missing Numbers</h3>
-  <p>Fill in the missing numbers on the hundreds chart.</p>
-  <div id="chart12"></div>
-  <button type="button" onclick="reset12()">Reset</button>
+function build13() {
+  const chart = document.getElementById("chart13");
+  chart.innerHTML = "";
 
-  <h3>Question 13: Add Squares</h3>
-  <p>Select the positions for 9, 15 and 59.</p>
-  <div id="chart13"></div>
-  <button type="button" onclick="reset13()">Reset</button>
+  // Draw the original squares from the worksheet.
+  visibleNumbers.forEach(number => {
+    chart.appendChild(makeSquare(number, "display"));
+  });
 
-  <h3>Your Answers</h3>
-  <button type="button" onclick="copyAnswers()">Copy My Answers</button>
-  <p>Paste your answers into the Essay response box.</p>
-  <textarea id="answers" rows="4" style="width:100%"></textarea>
-</div>
+  // Make all empty hundreds-chart positions clickable.
+  for (let number = 1; number <= 100; number++) {
+    if (visibleNumbers.includes(number)) continue;
 
-<style>
-#hundreds-activity {
-  font-family: Arial, sans-serif;
-  max-width: 700px;
-}
-.chart {
-  display: grid;
-  grid-template-columns: repeat(10, 45px);
-  grid-template-rows: repeat(6, 45px);
-  gap: 2px;
-  margin: 20px 0;
-}
-.cell {
-  width: 45px;
-  height: 45px;
-  border: 1px solid #555;
-  text-align: center;
-  box-sizing: border-box;
-}
-.cell input {
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  border: none;
-  font-size: 16px;
-}
-.selected {
-  background: #c6e6d5;
-}
-#hundreds-activity button {
-  padding: 10px 16px;
-  margin: 8px 0;
-  cursor: pointer;
-}
-</style>
+    const pos = position(number);
+    const square = document.createElement("button");
 
-<script>
-const startingNumbers = [18];
-const addedNumbers = [9,15,59];
+    square.type = "button";
+    square.className = "square target";
+    square.dataset.number = number;
 
-function createChart(id, mode) {
-  const chart = document.getElementById(id);
-  chart.className = "chart";
+    square.style.left = `calc(${pos.col} * var(--cell))`;
+    square.style.top = `calc(${pos.row} * var(--cell))`;
 
-  for (let n = 1; n <= 60; n++) {
-    const cell = document.createElement("div");
-    cell.className = "cell";
-    cell.dataset.number = n;
+    // Hide the empty position until selected.
+    square.style.border = "1px solid transparent";
+    square.style.background = "transparent";
+    square.textContent = "";
 
-    if (mode === 12) {
-      if (n === 18) {
-        cell.textContent = "18";
-      } else {
-        const input = document.createElement("input");
-        input.type = "number";
-        input.setAttribute("aria-label", "Number in position " + n);
-        cell.appendChild(input);
+    square.setAttribute(
+      "aria-label",
+      "Add a square at this position"
+    );
+
+    square.onclick = () => {
+      if (square.classList.contains("active")) {
+        square.classList.remove("active");
+        square.textContent = "";
+        square.style.border = "1px solid transparent";
+        square.style.background = "transparent";
+        return;
       }
-    } else {
-      cell.onclick = function() {
-        cell.classList.toggle("selected");
-      };
-      if (n === 18) cell.textContent = "18";
-    }
 
-    chart.appendChild(cell);
+      const activeCount =
+        chart.querySelectorAll(".target.active").length;
+
+      if (activeCount >= 3) {
+        return;
+      }
+
+      square.classList.add("active");
+      square.textContent = "+";
+      square.style.border = "2px solid #36834a";
+      square.style.background = "#dceedd";
+    };
+
+    chart.appendChild(square);
   }
 }
-
-function reset12() {
-  document.querySelectorAll("#chart12 input")
-    .forEach(input => input.value = "");
-}
-
-function reset13() {
-  document.querySelectorAll("#chart13 .cell")
-    .forEach(cell => cell.classList.remove("selected"));
-}
-
-function copyAnswers() {
-  const q12 = [...document.querySelectorAll("#chart12 input")]
-    .filter(input => input.value !== "")
-    .map(input => input.value);
-
-  const q13 = [...document.querySelectorAll("#chart13 .selected")]
-    .map(cell => cell.dataset.number);
-
-  const text =
-    "Question 12: " + q12.join(", ") +
-    "\nQuestion 13: " + q13.join(", ");
-
-  document.getElementById("answers").value = text;
-
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text);
-  }
-}
-
-createChart("chart12", 12);
-createChart("chart13", 13);
-</script>
