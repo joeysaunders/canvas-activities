@@ -7,97 +7,94 @@
 <title>Interactive Hundreds Chart</title>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
   padding: 12px;
-  background: #fff;
-  color: #222;
   font-family: Arial, sans-serif;
+  background: white;
+  color: #222;
 }
 
 .activity {
   max-width: 650px;
-  margin: 0 auto 28px;
+  margin: 0 auto 25px;
 }
 
 .chart-wrap {
-  width: 100%;
   overflow-x: auto;
-  padding: 10px 0;
+  width: 100%;
 }
 
 .chart {
-  --cell: 52px;
   position: relative;
-  width: calc(10 * var(--cell));
-  height: calc(7 * var(--cell));
+  width: 540px;
+  height: 350px;
   margin: 0 auto;
 }
 
-.square {
+.chart svg {
   position: absolute;
-  width: var(--cell);
-  height: var(--cell);
-  border: 1.5px solid #333;
-  background: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  top: 0;
+  left: 0;
+  width: 540px;
+  height: 350px;
+  pointer-events: none;
 }
 
-.square input {
-  width: 100%;
-  height: 100%;
+.number-input {
+  position: absolute;
+  width: 50px;
+  height: 50px;
   border: none;
-  padding: 0;
   background: transparent;
   text-align: center;
-  font: 19px Arial, sans-serif;
-  color: #111;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  padding: 0;
 }
 
-.square input:focus {
-  outline: 2px solid #3978b8;
+.number-input:focus {
+  outline: 2px solid #3678bd;
   outline-offset: -3px;
 }
 
-.fixed {
-  font-size: 19px;
-  font-weight: bold;
-  background: #f2f2f2;
+.fixed-number {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  pointer-events: none;
 }
 
-.target {
-  border: 1px solid transparent;
+.add-square {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border: 1.5px solid transparent;
   background: transparent;
   cursor: pointer;
   padding: 0;
-  color: #222;
 }
 
-.target:hover,
-.target:focus-visible {
-  border: 1px dashed #8aa6c2;
-  background: #f1f7ff;
+.add-square:hover {
+  background: rgba(50,120,200,0.08);
 }
 
-.target.active {
-  border: 2px solid #36834a;
-  background: #dceedd;
-  font-size: 22px;
-  font-weight: bold;
+.add-square.selected {
+  border: 2px solid #32804a;
+  background: rgba(100,190,120,0.18);
 }
 
 .controls {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin: 12px 0;
-  flex-wrap: wrap;
+  margin: 10px 0;
 }
 
 .action {
@@ -105,337 +102,312 @@ body {
   border: 1px solid #aaa;
   border-radius: 6px;
   background: #f5f5f5;
-  color: #222;
-  font-size: 14px;
   cursor: pointer;
-}
-
-.action:hover {
-  background: #e5e5e5;
+  font-size: 14px;
 }
 
 .answer-area {
   max-width: 520px;
-  margin: 14px auto;
+  margin: 10px auto;
 }
 
 .answer-area textarea {
-  display: block;
   width: 100%;
   min-height: 65px;
   padding: 10px;
   border: 1px solid #bbb;
   border-radius: 5px;
   font: 14px Arial, sans-serif;
-  resize: vertical;
 }
 
 .status {
   min-height: 20px;
-  margin-top: 6px;
-  font-size: 13px;
+  margin-top: 5px;
   text-align: center;
-}
-
-@media (max-width: 540px) {
-  .chart {
-    --cell: 42px;
-  }
-
-  .square input,
-  .fixed {
-    font-size: 16px;
-  }
+  font-size: 13px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- FIRST CHART -->
-
 <div class="activity">
   <div class="chart-wrap">
-    <div id="chart12" class="chart"></div>
+    <div class="chart" id="chart12"></div>
   </div>
 
   <div class="controls">
-    <button class="action" type="button"
-      onclick="reset12()">Reset</button>
-    <button class="action" type="button"
-      onclick="copy12()">Copy Answers</button>
+    <button class="action" onclick="reset12()">
+      Reset
+    </button>
+    <button class="action" onclick="copy12()">
+      Copy Answers
+    </button>
   </div>
 
   <div class="answer-area">
-    <textarea id="answer12" readonly
-      aria-label="First chart answers"></textarea>
-    <div id="status12" class="status"
-      aria-live="polite"></div>
+    <textarea id="answer12" readonly></textarea>
+    <div class="status" id="status12"></div>
   </div>
 </div>
 
-<!-- SECOND CHART -->
-
 <div class="activity">
   <div class="chart-wrap">
-    <div id="chart13" class="chart"></div>
+    <div class="chart" id="chart13"></div>
   </div>
 
   <div class="controls">
-    <button class="action" type="button"
-      onclick="reset13()">Reset</button>
-    <button class="action" type="button"
-      onclick="copy13()">Copy Answers</button>
+    <button class="action" onclick="reset13()">
+      Reset
+    </button>
+    <button class="action" onclick="copy13()">
+      Copy Answers
+    </button>
   </div>
 
   <div class="answer-area">
-    <textarea id="answer13" readonly
-      aria-label="Second chart answers"></textarea>
-    <div id="status13" class="status"
-      aria-live="polite"></div>
+    <textarea id="answer13" readonly></textarea>
+    <div class="status" id="status13"></div>
   </div>
 </div>
 
 <script>
 
-/*
-  ORIGINAL WORKSHEET LAYOUT
+// Each cell is 50px.
+// The visible worksheet begins at number 17.
+// The top row represents numbers 11-20.
 
-  The visible cells correspond to:
+const SIZE = 50;
+const LEFT = 20;
 
-                 17  18
-                     28
-                 37  38  39  40
-             46
-         55      57
-
-  The square immediately below 18 is 28.
-
-  All other hundreds-chart positions remain
-  invisible unless selected in the second chart.
-*/
-
+// Existing positions in the original worksheet.
 const visibleNumbers = [
   17, 18,
   28,
   37, 38, 39, 40,
   46,
-  55, 57
+  55, 56, 57
 ];
 
-const fixedNumber = 18;
+// Convert hundreds-chart numbers to coordinates.
+function coords(n) {
+  const col = (n - 1) % 10;
+  const row = Math.floor((n - 1) / 10) - 1;
 
-/*
-  A hundreds chart has 10 columns.
-  The first row is 1 to 10.
-*/
-
-function position(number) {
   return {
-    col: (number - 1) % 10,
-    row: Math.floor((number - 1) / 10)
+    x: LEFT + col * SIZE,
+    y: row * SIZE
   };
 }
 
-/*
-  Move the chart contents upwards so
-  the top visible row starts at the top.
-*/
+// Draw the exact outline pattern.
+// Some cells intentionally have open edges.
+function drawOutline(chart) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 540 350");
+  svg.setAttribute("aria-hidden", "true");
 
-const rowOffset = 1;
-
-function setPosition(element, number) {
-  const pos = position(number);
-
-  element.style.left =
-    `calc(${pos.col} * var(--cell))`;
-
-  element.style.top =
-    `calc(${pos.row - rowOffset} * var(--cell))`;
-}
-
-/*
-  Create one existing worksheet square.
-*/
-
-function makeSquare(number, mode) {
-  const square = document.createElement("div");
-  square.className = "square";
-
-  setPosition(square, number);
-
-  if (number === fixedNumber) {
-    square.classList.add("fixed");
-    square.textContent = "18";
-  } else if (mode === "type") {
-    const input = document.createElement("input");
-
-    input.type = "text";
-    input.inputMode = "numeric";
-    input.maxLength = 3;
-    input.dataset.position = number;
-
-    input.setAttribute(
-      "aria-label",
-      "Missing number"
-    );
-
-    square.appendChild(input);
+  function line(x1, y1, x2, y2) {
+    const el = document.createElementNS(ns, "line");
+    el.setAttribute("x1", x1);
+    el.setAttribute("y1", y1);
+    el.setAttribute("x2", x2);
+    el.setAttribute("y2", y2);
+    el.setAttribute("stroke", "#333");
+    el.setAttribute("stroke-width", "1.6");
+    svg.appendChild(el);
   }
 
-  return square;
+  function segment(c1, r1, c2, r2) {
+    line(
+      LEFT + c1 * SIZE,
+      r1 * SIZE,
+      LEFT + c2 * SIZE,
+      r2 * SIZE
+    );
+  }
+
+  // Top: 17 and 18.
+  segment(6,0,8,0);
+  segment(6,0,6,1);
+  segment(7,0,7,2);
+  segment(8,0,8,2);
+  segment(6,1,8,1);
+
+  // Square underneath 18 (28).
+  // Bottom edge is intentionally open.
+  segment(7,1,7,2);
+  segment(8,1,8,2);
+
+  // Middle row: 37, 38, 39, 40.
+  segment(6,2,10,2);
+  segment(6,2,6,3);
+  segment(7,2,7,3);
+  segment(8,2,8,3);
+  segment(9,2,9,3);
+  segment(10,2,10,3);
+
+  // The centre bottom edge is open.
+  segment(6,3,7,3);
+  segment(8,3,10,3);
+
+  // Staggered square below-left.
+  segment(5,3,6,3);
+  segment(5,3,5,4);
+  segment(6,3,6,4);
+
+  // Lower row and bottom section.
+  segment(4,4,7,4);
+  segment(4,4,4,5);
+  segment(5,4,5,6);
+  segment(6,4,6,6);
+  segment(7,4,7,5);
+
+  // Bottom left and bottom right squares.
+  segment(3,5,6,5);
+  segment(3,5,3,6);
+  segment(4,5,4,6);
+  segment(3,6,4,6);
+  segment(6,5,7,5);
+  segment(7,5,7,6);
+  segment(6,6,7,6);
+
+  chart.appendChild(svg);
 }
 
-/*
-  QUESTION 12:
-  Fill in the missing numbers.
-*/
+// Add the fixed 18.
+function addFixed18(chart) {
+  const p = coords(18);
+  const el = document.createElement("div");
 
+  el.className = "fixed-number";
+  el.textContent = "18";
+  el.style.left = p.x + "px";
+  el.style.top = p.y + "px";
+
+  chart.appendChild(el);
+}
+
+// Question 12: number entry.
 function build12() {
   const chart = document.getElementById("chart12");
   chart.innerHTML = "";
 
-  visibleNumbers.forEach(number => {
-    chart.appendChild(
-      makeSquare(number, "type")
-    );
+  drawOutline(chart);
+  addFixed18(chart);
+
+  visibleNumbers.forEach(n => {
+    if (n === 18) return;
+
+    const p = coords(n);
+    const input = document.createElement("input");
+
+    input.className = "number-input";
+    input.type = "text";
+    input.inputMode = "numeric";
+    input.maxLength = 3;
+    input.dataset.number = n;
+    input.setAttribute("aria-label", "Missing number");
+
+    input.style.left = p.x + "px";
+    input.style.top = p.y + "px";
+
+    chart.appendChild(input);
   });
 }
 
-/*
-  QUESTION 13:
-  Add three squares.
-
-  The student chooses the positions.
-  No correct answers are revealed.
-*/
-
+// Question 13: students add three squares.
 function build13() {
   const chart = document.getElementById("chart13");
   chart.innerHTML = "";
 
-  // Draw original worksheet squares.
-  visibleNumbers.forEach(number => {
-    chart.appendChild(
-      makeSquare(number, "display")
-    );
-  });
+  drawOutline(chart);
+  addFixed18(chart);
 
-  // Create invisible clickable positions.
-  for (let number = 1; number <= 70; number++) {
+  // The clickable area is invisible until selected.
+  for (let n = 11; n <= 70; n++) {
+    if (visibleNumbers.includes(n)) continue;
 
-    if (visibleNumbers.includes(number)) {
-      continue;
-    }
+    const p = coords(n);
+    const button = document.createElement("button");
 
-    const square = document.createElement("button");
-
-    square.type = "button";
-    square.className = "square target";
-    square.dataset.number = number;
-
-    setPosition(square, number);
-
-    square.setAttribute(
+    button.type = "button";
+    button.className = "add-square";
+    button.dataset.number = n;
+    button.style.left = p.x + "px";
+    button.style.top = p.y + "px";
+    button.setAttribute(
       "aria-label",
-      "Add square at this position"
+      "Add or remove square"
     );
+    button.setAttribute("aria-pressed", "false");
 
-    square.setAttribute("aria-pressed", "false");
-
-    square.onclick = function() {
-
-      // Remove a previously added square.
-      if (square.classList.contains("active")) {
-        square.classList.remove("active");
-        square.textContent = "";
-        square.setAttribute("aria-pressed", "false");
+    button.onclick = () => {
+      if (button.classList.contains("selected")) {
+        button.classList.remove("selected");
+        button.setAttribute("aria-pressed", "false");
         return;
       }
 
-      // Maximum of three added squares.
-      const activeCount =
-        chart.querySelectorAll(".target.active").length;
+      const count = chart.querySelectorAll(
+        ".add-square.selected"
+      ).length;
 
-      if (activeCount >= 3) {
-        return;
-      }
+      if (count >= 3) return;
 
-      square.classList.add("active");
-      square.textContent = "+";
-      square.setAttribute("aria-pressed", "true");
+      button.classList.add("selected");
+      button.setAttribute("aria-pressed", "true");
     };
 
-    chart.appendChild(square);
+    chart.appendChild(button);
   }
 }
 
-/*
-  RESET BUTTONS
-*/
-
 function reset12() {
   document.querySelectorAll("#chart12 input")
-    .forEach(input => {
-      input.value = "";
-    });
+    .forEach(input => input.value = "");
 
   document.getElementById("answer12").value = "";
   document.getElementById("status12").textContent = "";
 }
 
 function reset13() {
-  document.querySelectorAll("#chart13 .target")
-    .forEach(square => {
-      square.classList.remove("active");
-      square.textContent = "";
-      square.setAttribute("aria-pressed", "false");
+  document.querySelectorAll("#chart13 .add-square")
+    .forEach(button => {
+      button.classList.remove("selected");
+      button.setAttribute("aria-pressed", "false");
     });
 
   document.getElementById("answer13").value = "";
   document.getElementById("status13").textContent = "";
 }
 
-/*
-  COPY ANSWERS FOR CANVAS
-*/
-
-async function copyText(text, textareaId, statusId) {
-  const area = document.getElementById(textareaId);
+async function copyText(text, areaId, statusId) {
+  const area = document.getElementById(areaId);
   const status = document.getElementById(statusId);
 
   area.value = text;
 
   try {
     await navigator.clipboard.writeText(text);
-
     status.textContent =
       "Copied! Paste into your Canvas answer.";
-  } catch (error) {
+  } catch (e) {
     area.focus();
     area.select();
-
     status.textContent =
-      "Copy this text and paste it into Canvas.";
+      "Copy the selected text and paste into Canvas.";
   }
 }
-
-/*
-  QUESTION 12 ANSWERS
-*/
 
 function copy12() {
   const answers = [
     ...document.querySelectorAll("#chart12 input")
-  ]
-  .map(input => {
+  ].map(input => {
     const value = input.value.trim();
-
-    return value
-      ? input.dataset.position + "=" + value
-      : null;
-  })
-  .filter(Boolean);
+    return input.dataset.number + "=" + value;
+  });
 
   copyText(
     "Missing numbers: " + answers.join(", "),
@@ -444,33 +416,23 @@ function copy12() {
   );
 }
 
-/*
-  QUESTION 13 ANSWERS
-*/
-
 function copy13() {
   const selected = [
     ...document.querySelectorAll(
-      "#chart13 .target.active"
+      "#chart13 .add-square.selected"
     )
-  ].map(square => square.dataset.number);
+  ].map(button => button.dataset.number);
 
   copyText(
-    "Added squares at positions: " +
-      selected.join(", "),
+    "Added squares: " + selected.join(", "),
     "answer13",
     "status13"
   );
 }
 
-/*
-  START ACTIVITIES
-*/
-
 build12();
 build13();
 
 </script>
-
 </body>
 </html>
