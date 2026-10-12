@@ -4,8 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Interactive Hundreds Chart</title>
-
+<title>Hundreds Chart</title>
 <style>
 * { box-sizing: border-box; }
 
@@ -18,97 +17,113 @@ body {
 }
 
 .activity {
-  max-width: 650px;
-  margin: 0 auto 25px;
+  max-width: 620px;
+  margin: 0 auto 30px;
 }
 
-.chart-wrap {
+.chart-scroll {
   overflow-x: auto;
   width: 100%;
 }
 
 .chart {
+  --cell: 48px;
   position: relative;
-  width: 540px;
-  height: 350px;
+  width: calc(10 * var(--cell));
+  height: calc(10 * var(--cell));
   margin: 0 auto;
 }
 
-.chart svg {
+.chart.short {
+  height: calc(6 * var(--cell));
+}
+
+.outline {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 540px;
-  height: 350px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
-.number-input {
+.cell-input, .fixed-number, .added {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  border: none;
+  width: var(--cell);
+  height: var(--cell);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font: 18px Arial, sans-serif;
+}
+
+.cell-input {
+  border: 0;
   background: transparent;
   text-align: center;
-  font-size: 18px;
-  font-family: Arial, sans-serif;
   padding: 0;
 }
 
-.number-input:focus {
-  outline: 2px solid #3678bd;
+.cell-input:focus {
+  outline: 2px solid #2876bd;
   outline-offset: -3px;
 }
 
 .fixed-number {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 18px;
   pointer-events: none;
 }
 
-.add-square {
+.click-cell {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  border: 1.5px solid transparent;
+  width: var(--cell);
+  height: var(--cell);
+  border: 0;
   background: transparent;
-  cursor: pointer;
+  cursor: crosshair;
   padding: 0;
 }
 
-.add-square:hover {
-  background: rgba(50,120,200,0.08);
+.click-cell:hover,
+.click-cell:focus-visible {
+  outline: 1px dashed #82a7d1;
+  outline-offset: -1px;
+  background: rgba(70,140,220,.08);
 }
 
-.add-square.selected {
-  border: 2px solid #32804a;
-  background: rgba(100,190,120,0.18);
+.added {
+  border: 2px solid #34844c;
+  background: #e2f3e6;
+  pointer-events: none;
+  font-weight: bold;
 }
 
 .controls {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin: 10px 0;
+  flex-wrap: wrap;
+  margin: 12px auto;
 }
 
-.action {
-  padding: 10px 16px;
+button.action, select {
+  padding: 10px 14px;
   border: 1px solid #aaa;
   border-radius: 6px;
   background: #f5f5f5;
+  color: #222;
+  font: 14px Arial, sans-serif;
+}
+
+button.action {
   cursor: pointer;
-  font-size: 14px;
+}
+
+button.action:hover {
+  background: #e5e5e5;
 }
 
 .answer-area {
   max-width: 520px;
-  margin: 10px auto;
+  margin: 12px auto;
 }
 
 .answer-area textarea {
@@ -126,313 +141,282 @@ body {
   text-align: center;
   font-size: 13px;
 }
+
+@media (max-width: 520px) {
+  .chart {
+    --cell: 38px;
+  }
+  .cell-input, .fixed-number, .added {
+    font-size: 15px;
+  }
+}
 </style>
 </head>
 
 <body>
 
 <div class="activity">
-  <div class="chart-wrap">
-    <div class="chart" id="chart12"></div>
+  <div class="chart-scroll">
+    <div id="chart12" class="chart short"></div>
   </div>
-
   <div class="controls">
-    <button class="action" onclick="reset12()">
-      Reset
-    </button>
-    <button class="action" onclick="copy12()">
-      Copy Answers
-    </button>
+    <button class="action" type="button"
+      onclick="reset12()">Reset</button>
+    <button class="action" type="button"
+      onclick="copy12()">Copy Answers</button>
   </div>
-
   <div class="answer-area">
     <textarea id="answer12" readonly></textarea>
-    <div class="status" id="status12"></div>
+    <div id="status12" class="status"></div>
   </div>
 </div>
 
 <div class="activity">
-  <div class="chart-wrap">
-    <div class="chart" id="chart13"></div>
+  <div class="controls">
+    <select id="numberToAdd"
+      aria-label="Choose number to add">
+      <option value="9">9</option>
+      <option value="15">15</option>
+      <option value="59">59</option>
+    </select>
+  </div>
+
+  <div class="chart-scroll">
+    <div id="chart13" class="chart"></div>
   </div>
 
   <div class="controls">
-    <button class="action" onclick="reset13()">
-      Reset
-    </button>
-    <button class="action" onclick="copy13()">
-      Copy Answers
-    </button>
+    <button class="action" type="button"
+      onclick="reset13()">Reset</button>
+    <button class="action" type="button"
+      onclick="copy13()">Copy Answers</button>
   </div>
 
   <div class="answer-area">
     <textarea id="answer13" readonly></textarea>
-    <div class="status" id="status13"></div>
+    <div id="status13" class="status"></div>
   </div>
 </div>
 
 <script>
+const SIZE = 48;
 
-// Each cell is 50px.
-// The visible worksheet begins at number 17.
-// The top row represents numbers 11-20.
-
-const SIZE = 50;
-const LEFT = 20;
-
-// Existing positions in the original worksheet.
-const visibleNumbers = [
-  17, 18,
-  28,
+// Worksheet positions, mapped from the photograph.
+// Row 0 = 1-10, row 1 = 11-20, etc.
+const existing = [
+  17, 18, 28,
   37, 38, 39, 40,
-  46,
-  55, 56, 57
+  46, 55, 57
 ];
 
-// Convert hundreds-chart numbers to coordinates.
-function coords(n) {
-  const col = (n - 1) % 10;
-  const row = Math.floor((n - 1) / 10) - 1;
+// Number positions used for entering answers.
+// The original drawing includes some open cells.
+const entryPositions = existing.filter(n => n !== 18);
 
+// Coordinates in a 10-column hundreds chart.
+function pos(n) {
   return {
-    x: LEFT + col * SIZE,
-    y: row * SIZE
+    col: (n - 1) % 10,
+    row: Math.floor((n - 1) / 10)
   };
 }
 
-// Draw the exact outline pattern.
-// Some cells intentionally have open edges.
-function drawOutline(chart) {
+function place(el, n, rowOffset = 0) {
+  const p = pos(n);
+  el.style.left =
+    `calc(${p.col} * var(--cell))`;
+  el.style.top =
+    `calc(${p.row - rowOffset} * var(--cell))`;
+}
+
+// The outline is drawn from individual lines,
+// not by creating complete boxes.
+// This preserves the worksheet's open edges.
+function drawOutline(chart, rowOffset) {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 540 350");
-  svg.setAttribute("aria-hidden", "true");
+  svg.classList.add("outline");
 
-  function line(x1, y1, x2, y2) {
-    const el = document.createElementNS(ns, "line");
-    el.setAttribute("x1", x1);
-    el.setAttribute("y1", y1);
-    el.setAttribute("x2", x2);
-    el.setAttribute("y2", y2);
-    el.setAttribute("stroke", "#333");
-    el.setAttribute("stroke-width", "1.6");
+  const width = 10 * SIZE;
+  const height = (rowOffset === 1 ? 6 : 10) * SIZE;
+  svg.setAttribute("viewBox",
+    `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+
+  function line(x1,y1,x2,y2) {
+    const el = document.createElementNS(ns,"line");
+    el.setAttribute("x1", x1 * SIZE);
+    el.setAttribute("y1", (y1-rowOffset)*SIZE);
+    el.setAttribute("x2", x2 * SIZE);
+    el.setAttribute("y2", (y2-rowOffset)*SIZE);
+    el.setAttribute("stroke","#333");
+    el.setAttribute("stroke-width","1.5");
     svg.appendChild(el);
   }
 
-  function segment(c1, r1, c2, r2) {
-    line(
-      LEFT + c1 * SIZE,
-      r1 * SIZE,
-      LEFT + c2 * SIZE,
-      r2 * SIZE
-    );
-  }
+  // Horizontal lines from the original worksheet.
+  [
+    [6,8,1],
+    [6,8,2],
+    [6,10,3],
+    [6,7,4],
+    [8,10,4],
+    [5,7,5],
+    [4,5,6],
+    [6,7,6]
+  ].forEach(([a,b,y]) => line(a,y,b,y));
 
-  // Top: 17 and 18.
-  segment(6,0,8,0);
-  segment(6,0,6,1);
-  segment(7,0,7,2);
-  segment(8,0,8,2);
-  segment(6,1,8,1);
-
-  // Square underneath 18 (28).
-  // Bottom edge is intentionally open.
-  segment(7,1,7,2);
-  segment(8,1,8,2);
-
-  // Middle row: 37, 38, 39, 40.
-  segment(6,2,10,2);
-  segment(6,2,6,3);
-  segment(7,2,7,3);
-  segment(8,2,8,3);
-  segment(9,2,9,3);
-  segment(10,2,10,3);
-
-  // The centre bottom edge is open.
-  segment(6,3,7,3);
-  segment(8,3,10,3);
-
-  // Staggered square below-left.
-  segment(5,3,6,3);
-  segment(5,3,5,4);
-  segment(6,3,6,4);
-
-  // Lower row and bottom section.
-  segment(4,4,7,4);
-  segment(4,4,4,5);
-  segment(5,4,5,6);
-  segment(6,4,6,6);
-  segment(7,4,7,5);
-
-  // Bottom left and bottom right squares.
-  segment(3,5,6,5);
-  segment(3,5,3,6);
-  segment(4,5,4,6);
-  segment(3,6,4,6);
-  segment(6,5,7,5);
-  segment(7,5,7,6);
-  segment(6,6,7,6);
+  // Vertical lines from the original worksheet.
+  [
+    [6,1,2],
+    [7,1,4],
+    [8,1,4],
+    [6,3,5],
+    [9,3,4],
+    [10,3,4],
+    [5,4,6],
+    [4,5,6],
+    [7,5,6]
+  ].forEach(([x,a,b]) => line(x,a,x,b));
 
   chart.appendChild(svg);
 }
 
-// Add the fixed 18.
-function addFixed18(chart) {
-  const p = coords(18);
+function add18(chart, offset) {
   const el = document.createElement("div");
-
   el.className = "fixed-number";
   el.textContent = "18";
-  el.style.left = p.x + "px";
-  el.style.top = p.y + "px";
-
+  place(el,18,offset);
   chart.appendChild(el);
 }
 
-// Question 12: number entry.
 function build12() {
   const chart = document.getElementById("chart12");
   chart.innerHTML = "";
+  drawOutline(chart,1);
+  add18(chart,1);
 
-  drawOutline(chart);
-  addFixed18(chart);
-
-  visibleNumbers.forEach(n => {
-    if (n === 18) return;
-
-    const p = coords(n);
+  entryPositions.forEach(n => {
     const input = document.createElement("input");
-
-    input.className = "number-input";
+    input.className = "cell-input";
     input.type = "text";
     input.inputMode = "numeric";
     input.maxLength = 3;
-    input.dataset.number = n;
-    input.setAttribute("aria-label", "Missing number");
-
-    input.style.left = p.x + "px";
-    input.style.top = p.y + "px";
-
+    input.dataset.position = n;
+    input.setAttribute("aria-label",
+      "Missing number");
+    place(input,n,1);
     chart.appendChild(input);
   });
 }
 
-// Question 13: students add three squares.
+const placed = {};
+
 function build13() {
   const chart = document.getElementById("chart13");
   chart.innerHTML = "";
 
-  drawOutline(chart);
-  addFixed18(chart);
+  drawOutline(chart,0);
+  add18(chart,0);
 
-  // The clickable area is invisible until selected.
-  for (let n = 11; n <= 70; n++) {
-    if (visibleNumbers.includes(n)) continue;
+  // Clickable positions cover the full 1-100 chart.
+  for(let n=1;n<=100;n++) {
+    if(existing.includes(n)) continue;
 
-    const p = coords(n);
     const button = document.createElement("button");
-
     button.type = "button";
-    button.className = "add-square";
-    button.dataset.number = n;
-    button.style.left = p.x + "px";
-    button.style.top = p.y + "px";
-    button.setAttribute(
-      "aria-label",
-      "Add or remove square"
-    );
-    button.setAttribute("aria-pressed", "false");
+    button.className = "click-cell";
+    button.setAttribute("aria-label",
+      "Place a square here");
+    place(button,n);
 
     button.onclick = () => {
-      if (button.classList.contains("selected")) {
-        button.classList.remove("selected");
-        button.setAttribute("aria-pressed", "false");
-        return;
-      }
+      const selected =
+        document.getElementById("numberToAdd").value;
 
-      const count = chart.querySelectorAll(
-        ".add-square.selected"
-      ).length;
-
-      if (count >= 3) return;
-
-      button.classList.add("selected");
-      button.setAttribute("aria-pressed", "true");
+      // Clicking a position assigns the selected number.
+      // Assigning it again moves the square.
+      placed[selected] = n;
+      renderAdded();
     };
 
     chart.appendChild(button);
   }
+
+  renderAdded();
+}
+
+function renderAdded() {
+  const chart = document.getElementById("chart13");
+
+  chart.querySelectorAll(".added").forEach(el=>el.remove());
+
+  Object.entries(placed).forEach(([number,location])=>{
+    const el = document.createElement("div");
+    el.className = "added";
+    el.textContent = number;
+    place(el,location);
+    chart.appendChild(el);
+  });
 }
 
 function reset12() {
   document.querySelectorAll("#chart12 input")
-    .forEach(input => input.value = "");
-
-  document.getElementById("answer12").value = "";
-  document.getElementById("status12").textContent = "";
+    .forEach(el=>el.value="");
+  document.getElementById("answer12").value="";
+  document.getElementById("status12").textContent="";
 }
 
 function reset13() {
-  document.querySelectorAll("#chart13 .add-square")
-    .forEach(button => {
-      button.classList.remove("selected");
-      button.setAttribute("aria-pressed", "false");
-    });
-
-  document.getElementById("answer13").value = "";
-  document.getElementById("status13").textContent = "";
+  Object.keys(placed).forEach(key=>delete placed[key]);
+  renderAdded();
+  document.getElementById("answer13").value="";
+  document.getElementById("status13").textContent="";
 }
 
-async function copyText(text, areaId, statusId) {
-  const area = document.getElementById(areaId);
-  const status = document.getElementById(statusId);
-
-  area.value = text;
+async function copyText(text,areaId,statusId) {
+  const area=document.getElementById(areaId);
+  const status=document.getElementById(statusId);
+  area.value=text;
 
   try {
     await navigator.clipboard.writeText(text);
-    status.textContent =
+    status.textContent=
       "Copied! Paste into your Canvas answer.";
-  } catch (e) {
+  } catch(e) {
     area.focus();
     area.select();
-    status.textContent =
-      "Copy the selected text and paste into Canvas.";
+    status.textContent=
+      "Copy this text and paste into Canvas.";
   }
 }
 
 function copy12() {
-  const answers = [
+  const answers=[
     ...document.querySelectorAll("#chart12 input")
-  ].map(input => {
-    const value = input.value.trim();
-    return input.dataset.number + "=" + value;
-  });
+  ].map(el=>
+    el.dataset.position+"="+el.value.trim()
+  );
 
   copyText(
-    "Missing numbers: " + answers.join(", "),
-    "answer12",
-    "status12"
+    "Missing numbers: "+answers.join(", "),
+    "answer12","status12"
   );
 }
 
 function copy13() {
-  const selected = [
-    ...document.querySelectorAll(
-      "#chart13 .add-square.selected"
-    )
-  ].map(button => button.dataset.number);
+  const answers=["9","15","59"].map(n=>{
+    return n+"="+(placed[n] || "not placed");
+  });
 
   copyText(
-    "Added squares: " + selected.join(", "),
-    "answer13",
-    "status13"
+    "Added squares: "+answers.join(", "),
+    "answer13","status13"
   );
 }
 
 build12();
 build13();
-
 </script>
 </body>
 </html>
