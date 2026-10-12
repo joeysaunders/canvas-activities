@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colour Five Fingers</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: white;
+    color: #222;
+    padding: 20px;
+  }
+
+  .set {
+    margin: 25px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+  }
+
+  .hands {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  svg {
+    width: 180px;
+    max-width: 45%;
+    height: auto;
+  }
+
+  .finger {
+    fill: #e2e2e2;
+    stroke: #777;
+    stroke-width: 2;
+    cursor: pointer;
+  }
+
+  .finger.selected {
+    fill: #9871d1;
+  }
+
+  .palm {
+    fill: #e2e2e2;
+    stroke: #777;
+    stroke-width: 2;
+    pointer-events: none;
+  }
+
+  button {
+    margin-top: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>Colour Five Fingers</h2>
+<p>
+Colour five fingers altogether on both hands.
+Do it a different way in the second set.
+Click a finger again to remove the colour.
+</p>
+
+<div id="activities"></div>
+
+<script>
+const container = document.getElementById("activities");
+
+function makeHand(setNumber, handNumber) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 180 190");
+  svg.setAttribute("role", "group");
+  svg.setAttribute("aria-label", "Hand " + handNumber);
+
+  const fingers = [
+    {x: 15, y: 60, h: 85},
+    {x: 44, y: 25, h: 120},
+    {x: 73, y: 10, h: 135},
+    {x: 102, y: 25, h: 120},
+    {x: 131, y: 60, h: 85}
+  ];
+
+  fingers.forEach((f, index) => {
+    const finger = document.createElementNS(svgNS, "rect");
+    finger.setAttribute("x", f.x);
+    finger.setAttribute("y", f.y);
+    finger.setAttribute("width", 25);
+    finger.setAttribute("height", f.h);
+    finger.setAttribute("rx", 12);
+    finger.setAttribute("class", "finger");
+    finger.setAttribute("tabindex", "0");
+    finger.setAttribute("role", "button");
+    finger.setAttribute("aria-pressed", "false");
+    finger.setAttribute("aria-label", "Finger " + (index + 1));
+
+    function toggleFinger() {
+      const selected = document.querySelectorAll(
+        "#set" + setNumber + " .finger.selected"
+      );
+
+      if (finger.classList.contains("selected")) {
+        finger.classList.remove("selected");
+        finger.setAttribute("aria-pressed", "false");
+      } else if (selected.length < 5) {
+        finger.classList.add("selected");
+        finger.setAttribute("aria-pressed", "true");
+      }
+    }
+
+    finger.addEventListener("click", toggleFinger);
+    finger.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleFinger();
+      }
+    });
+
+    svg.appendChild(finger);
+  });
+
+  const palm = document.createElementNS(svgNS, "rect");
+  palm.setAttribute("x", 22);
+  palm.setAttribute("y", 115);
+  palm.setAttribute("width", 132);
+  palm.setAttribute("height", 65);
+  palm.setAttribute("rx", 24);
+  palm.setAttribute("class", "palm");
+  svg.appendChild(palm);
+
+  return svg;
+}
+
+for (let setNumber = 1; setNumber <= 2; setNumber++) {
+  const section = document.createElement("div");
+  section.className = "set";
+  section.id = "set" + setNumber;
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Set " + setNumber;
+  section.appendChild(heading);
+
+  const hands = document.createElement("div");
+  hands.className = "hands";
+
+  hands.appendChild(makeHand(setNumber, 1));
+  hands.appendChild(makeHand(setNumber, 2));
+
+  section.appendChild(hands);
+
+  const reset = document.createElement("button");
+  reset.textContent = "Clear this set";
+  reset.addEventListener("click", () => {
+    section.querySelectorAll(".finger.selected").forEach(finger => {
+      finger.classList.remove("selected");
+      finger.setAttribute("aria-pressed", "false");
+    });
+  });
+
+  section.appendChild(reset);
+  container.appendChild(section);
+}
+</script>
+
+</body>
+</html>
