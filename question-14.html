@@ -1,0 +1,394 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MAB Blocks – Question 14</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 12px;
+  font-family: Arial, sans-serif;
+  background: white;
+  color: #222;
+}
+
+.activity {
+  max-width: 950px;
+  margin: auto;
+}
+
+.bank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 16px;
+  border: 2px solid #bbb;
+  border-radius: 10px;
+  background: #f7f7f7;
+  margin-bottom: 18px;
+}
+
+.bank-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bank-item:active {
+  cursor: grabbing;
+}
+
+.rod {
+  display: flex;
+  width: 180px;
+  height: 28px;
+  border: 2px solid #333;
+  background: #fff;
+  box-shadow: 3px -3px 0 #777;
+}
+
+.rod span {
+  flex: 1;
+  border-right: 1px solid #333;
+}
+
+.rod span:last-child {
+  border-right: none;
+}
+
+.cube {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #333;
+  background: white;
+  box-shadow: 4px -4px 0 #777;
+}
+
+.workspace {
+  margin-bottom: 18px;
+  border: 2px solid #999;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: #f2f2f2;
+  border-bottom: 1px solid #bbb;
+}
+
+.workspace-header strong {
+  font-size: 16px;
+}
+
+button {
+  background: white;
+  border: 1px solid #888;
+  border-radius: 5px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+button:hover {
+  background: #e8e8e8;
+}
+
+.dropzone {
+  position: relative;
+  height: 175px;
+  background: white;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.placed {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.placed:active {
+  cursor: grabbing;
+}
+
+.placed.selected {
+  outline: 2px dashed #555;
+  outline-offset: 5px;
+}
+
+.summary {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-top: 1px solid #ddd;
+  font-size: 14px;
+  background: #fafafa;
+}
+
+.summary input {
+  width: 65px;
+  padding: 5px;
+  font-size: 15px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+}
+
+.note {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="activity">
+
+  <div class="bank">
+    <div class="bank-item"
+         data-type="ten">
+      <strong>Tens</strong>
+      <div class="rod">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <div class="bank-item"
+         data-type="one">
+      <strong>Ones</strong>
+      <div class="cube"></div>
+    </div>
+  </div>
+
+  <p class="note">
+    Drag blocks into each workspace.
+    Double-click a placed block to remove it.
+  </p>
+
+  <div id="workspaces"></div>
+
+</div>
+
+<script>
+const container = document.getElementById("workspaces");
+
+for (let i = 1; i <= 3; i++) {
+  const workspace = document.createElement("div");
+  workspace.className = "workspace";
+
+  workspace.innerHTML = `
+    <div class="workspace-header">
+      <strong>Combination ${i}</strong>
+      <button type="button"
+              class="reset">Reset</button>
+    </div>
+
+    <div class="dropzone"></div>
+
+    <div class="summary">
+      <label>
+        Tens:
+        <input type="number"
+               min="0"
+               class="tens-count">
+      </label>
+
+      <label>
+        Ones:
+        <input type="number"
+               min="0"
+               class="ones-count">
+      </label>
+    </div>
+  `;
+
+  container.appendChild(workspace);
+
+  workspace.querySelector(".reset")
+    .addEventListener("click", () => {
+      workspace.querySelector(".dropzone").innerHTML = "";
+      workspace.querySelector(".tens-count").value = "";
+      workspace.querySelector(".ones-count").value = "";
+    });
+}
+
+function makeBlock(type) {
+  const block = document.createElement("div");
+  block.className = "placed";
+  block.dataset.type = type;
+
+  if (type === "ten") {
+    block.classList.add("rod");
+    for (let i = 0; i < 10; i++) {
+      block.appendChild(document.createElement("span"));
+    }
+  } else {
+    block.classList.add("cube");
+  }
+
+  block.addEventListener("dblclick", () => {
+    block.remove();
+  });
+
+  return block;
+}
+
+let dragging = null;
+
+document.querySelectorAll(".bank-item")
+  .forEach(item => {
+    item.addEventListener("pointerdown", event => {
+      event.preventDefault();
+
+      const type = item.dataset.type;
+      const block = makeBlock(type);
+
+      document.body.appendChild(block);
+
+      const rect = block.getBoundingClientRect();
+
+      dragging = {
+        block,
+        isNew: true,
+        offsetX: rect.width / 2,
+        offsetY: rect.height / 2,
+        originalZone: null
+      };
+
+      block.style.position = "fixed";
+      block.style.zIndex = "1000";
+      block.style.pointerEvents = "none";
+
+      moveBlock(event.clientX, event.clientY);
+    });
+  });
+
+document.addEventListener("pointerdown", event => {
+  if (dragging) return;
+
+  const block = event.target.closest(".placed");
+  if (!block) return;
+
+  event.preventDefault();
+
+  const rect = block.getBoundingClientRect();
+  const zone = block.closest(".dropzone");
+
+  dragging = {
+    block,
+    isNew: false,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+    originalZone: zone
+  };
+
+  document.body.appendChild(block);
+
+  block.style.position = "fixed";
+  block.style.zIndex = "1000";
+  block.style.pointerEvents = "none";
+
+  block.style.left = rect.left + "px";
+  block.style.top = rect.top + "px";
+});
+
+document.addEventListener("pointermove", event => {
+  if (!dragging) return;
+
+  event.preventDefault();
+  moveBlock(event.clientX, event.clientY);
+});
+
+function moveBlock(x, y) {
+  if (!dragging) return;
+
+  dragging.block.style.left =
+    (x - dragging.offsetX) + "px";
+
+  dragging.block.style.top =
+    (y - dragging.offsetY) + "px";
+}
+
+document.addEventListener("pointerup", event => {
+  if (!dragging) return;
+
+  const block = dragging.block;
+
+  const target = document.elementFromPoint(
+    event.clientX,
+    event.clientY
+  );
+
+  const zone = target
+    ? target.closest(".dropzone")
+    : null;
+
+  if (zone) {
+    const zoneRect = zone.getBoundingClientRect();
+
+    const width = block.offsetWidth;
+    const height = block.offsetHeight;
+
+    const left = Math.max(
+      0,
+      Math.min(
+        event.clientX - zoneRect.left - dragging.offsetX,
+        zone.clientWidth - width
+      )
+    );
+
+    const top = Math.max(
+      0,
+      Math.min(
+        event.clientY - zoneRect.top - dragging.offsetY,
+        zone.clientHeight - height
+      )
+    );
+
+    zone.appendChild(block);
+
+    block.style.position = "absolute";
+    block.style.left = left + "px";
+    block.style.top = top + "px";
+    block.style.zIndex = "1";
+    block.style.pointerEvents = "auto";
+
+  } else if (dragging.isNew) {
+    block.remove();
+
+  } else if (dragging.originalZone) {
+    dragging.originalZone.appendChild(block);
+
+    block.style.position = "absolute";
+    block.style.zIndex = "1";
+    block.style.pointerEvents = "auto";
+  }
+
+  dragging = null;
+});
+</script>
+
+</body>
+</html>
