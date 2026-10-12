@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hundreds Chart Interactive</title>
+<title>Interactive Hundreds Chart</title>
 
 <style>
 * {
@@ -14,9 +14,9 @@
 body {
   margin: 0;
   padding: 12px;
-  font-family: Arial, sans-serif;
+  background: #fff;
   color: #222;
-  background: white;
+  font-family: Arial, sans-serif;
 }
 
 .activity {
@@ -27,14 +27,14 @@ body {
 .chart-wrap {
   width: 100%;
   overflow-x: auto;
-  padding: 8px 0;
+  padding: 10px 0;
 }
 
 .chart {
-  --cell: 48px;
+  --cell: 52px;
   position: relative;
   width: calc(10 * var(--cell));
-  height: calc(10 * var(--cell));
+  height: calc(7 * var(--cell));
   margin: 0 auto;
 }
 
@@ -52,28 +52,31 @@ body {
 .square input {
   width: 100%;
   height: 100%;
+  border: none;
   padding: 0;
-  border: 0;
   background: transparent;
   text-align: center;
-  font: 18px Arial, sans-serif;
+  font: 19px Arial, sans-serif;
   color: #111;
+}
+
+.square input:focus {
+  outline: 2px solid #3978b8;
   outline-offset: -3px;
 }
 
 .fixed {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: bold;
-  background: #f0f0f0;
+  background: #f2f2f2;
 }
 
 .target {
   border: 1px solid transparent;
   background: transparent;
-  color: #222;
-  font-size: 20px;
   cursor: pointer;
   padding: 0;
+  color: #222;
 }
 
 .target:hover,
@@ -83,9 +86,9 @@ body {
 }
 
 .target.active {
-  background: #dceedd;
   border: 2px solid #36834a;
-  font-size: 20px;
+  background: #dceedd;
+  font-size: 22px;
   font-weight: bold;
 }
 
@@ -97,53 +100,51 @@ body {
   flex-wrap: wrap;
 }
 
-button.action {
-  padding: 10px 15px;
+.action {
+  padding: 10px 16px;
   border: 1px solid #aaa;
   border-radius: 6px;
   background: #f5f5f5;
   color: #222;
-  cursor: pointer;
   font-size: 14px;
+  cursor: pointer;
 }
 
-button.action:hover {
+.action:hover {
   background: #e5e5e5;
 }
 
 .answer-area {
   max-width: 520px;
   margin: 14px auto;
-  text-align: center;
 }
 
 .answer-area textarea {
   display: block;
   width: 100%;
-  min-height: 75px;
-  margin-top: 8px;
+  min-height: 65px;
   padding: 10px;
   border: 1px solid #bbb;
   border-radius: 5px;
-  font-size: 14px;
+  font: 14px Arial, sans-serif;
   resize: vertical;
 }
 
 .status {
   min-height: 20px;
+  margin-top: 6px;
   font-size: 13px;
-  color: #444;
   text-align: center;
 }
 
 @media (max-width: 540px) {
   .chart {
-    --cell: 38px;
+    --cell: 42px;
   }
 
   .square input,
   .fixed {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 </style>
@@ -151,7 +152,7 @@ button.action:hover {
 
 <body>
 
-<!-- FIRST INTERACTIVE CHART -->
+<!-- FIRST CHART -->
 
 <div class="activity">
   <div class="chart-wrap">
@@ -161,22 +162,19 @@ button.action:hover {
   <div class="controls">
     <button class="action" type="button"
       onclick="reset12()">Reset</button>
-
     <button class="action" type="button"
       onclick="copy12()">Copy Answers</button>
   </div>
 
   <div class="answer-area">
     <textarea id="answer12" readonly
-      aria-label="Answers for first chart"></textarea>
-
+      aria-label="First chart answers"></textarea>
     <div id="status12" class="status"
       aria-live="polite"></div>
   </div>
 </div>
 
-
-<!-- SECOND INTERACTIVE CHART -->
+<!-- SECOND CHART -->
 
 <div class="activity">
   <div class="chart-wrap">
@@ -186,37 +184,52 @@ button.action:hover {
   <div class="controls">
     <button class="action" type="button"
       onclick="reset13()">Reset</button>
-
     <button class="action" type="button"
       onclick="copy13()">Copy Answers</button>
   </div>
 
   <div class="answer-area">
     <textarea id="answer13" readonly
-      aria-label="Answers for second chart"></textarea>
-
+      aria-label="Second chart answers"></textarea>
     <div id="status13" class="status"
       aria-live="polite"></div>
   </div>
 </div>
 
-
 <script>
 
-// Visible squares in the starting chart.
-// Change this array if the worksheet layout differs.
+/*
+  ORIGINAL WORKSHEET LAYOUT
+
+  The visible cells correspond to:
+
+                 17  18
+                     28
+                 37  38  39  40
+             46
+         55      57
+
+  The square immediately below 18 is 28.
+
+  All other hundreds-chart positions remain
+  invisible unless selected in the second chart.
+*/
+
 const visibleNumbers = [
   17, 18,
-  27,
-  36, 38, 39,
-  46, 47,
-  55, 57,
-  65, 66, 67
+  28,
+  37, 38, 39, 40,
+  46,
+  55, 57
 ];
 
 const fixedNumber = 18;
 
-// Calculate position on a standard hundreds chart.
+/*
+  A hundreds chart has 10 columns.
+  The first row is 1 to 10.
+*/
+
 function position(number) {
   return {
     col: (number - 1) % 10,
@@ -224,16 +237,32 @@ function position(number) {
   };
 }
 
-// Create an existing square.
-function makeSquare(number, mode) {
-  const pos = position(number);
-  const square = document.createElement("div");
+/*
+  Move the chart contents upwards so
+  the top visible row starts at the top.
+*/
 
-  square.className = "square";
-  square.style.left =
+const rowOffset = 1;
+
+function setPosition(element, number) {
+  const pos = position(number);
+
+  element.style.left =
     `calc(${pos.col} * var(--cell))`;
-  square.style.top =
-    `calc(${pos.row} * var(--cell))`;
+
+  element.style.top =
+    `calc(${pos.row - rowOffset} * var(--cell))`;
+}
+
+/*
+  Create one existing worksheet square.
+*/
+
+function makeSquare(number, mode) {
+  const square = document.createElement("div");
+  square.className = "square";
+
+  setPosition(square, number);
 
   if (number === fixedNumber) {
     square.classList.add("fixed");
@@ -257,111 +286,119 @@ function makeSquare(number, mode) {
   return square;
 }
 
-
-// BUILD FIRST CHART
+/*
+  QUESTION 12:
+  Fill in the missing numbers.
+*/
 
 function build12() {
   const chart = document.getElementById("chart12");
   chart.innerHTML = "";
 
   visibleNumbers.forEach(number => {
-    chart.appendChild(makeSquare(number, "type"));
+    chart.appendChild(
+      makeSquare(number, "type")
+    );
   });
 }
 
+/*
+  QUESTION 13:
+  Add three squares.
 
-// BUILD SECOND CHART
+  The student chooses the positions.
+  No correct answers are revealed.
+*/
 
 function build13() {
   const chart = document.getElementById("chart13");
   chart.innerHTML = "";
 
-  // Draw the existing worksheet squares.
+  // Draw original worksheet squares.
   visibleNumbers.forEach(number => {
-    chart.appendChild(makeSquare(number, "display"));
+    chart.appendChild(
+      makeSquare(number, "display")
+    );
   });
 
   // Create invisible clickable positions.
-  for (let number = 1; number <= 100; number++) {
+  for (let number = 1; number <= 70; number++) {
 
     if (visibleNumbers.includes(number)) {
       continue;
     }
 
-    const pos = position(number);
     const square = document.createElement("button");
 
     square.type = "button";
     square.className = "square target";
     square.dataset.number = number;
 
-    square.style.left =
-      `calc(${pos.col} * var(--cell))`;
-    square.style.top =
-      `calc(${pos.row} * var(--cell))`;
-
-    square.textContent = "";
+    setPosition(square, number);
 
     square.setAttribute(
       "aria-label",
-      "Add a square at this position"
+      "Add square at this position"
     );
 
-    square.onclick = () => {
+    square.setAttribute("aria-pressed", "false");
 
-      // Remove an already selected square.
+    square.onclick = function() {
+
+      // Remove a previously added square.
       if (square.classList.contains("active")) {
         square.classList.remove("active");
         square.textContent = "";
+        square.setAttribute("aria-pressed", "false");
         return;
       }
 
-      // Allow a maximum of three squares.
+      // Maximum of three added squares.
       const activeCount =
-        chart.querySelectorAll(
-          ".target.active"
-        ).length;
+        chart.querySelectorAll(".target.active").length;
 
       if (activeCount >= 3) {
         return;
       }
 
-      // Add a square.
       square.classList.add("active");
       square.textContent = "+";
+      square.setAttribute("aria-pressed", "true");
     };
 
     chart.appendChild(square);
   }
 }
 
-
-// RESET FIRST CHART
+/*
+  RESET BUTTONS
+*/
 
 function reset12() {
   document.querySelectorAll("#chart12 input")
-    .forEach(input => input.value = "");
+    .forEach(input => {
+      input.value = "";
+    });
 
   document.getElementById("answer12").value = "";
   document.getElementById("status12").textContent = "";
 }
-
-
-// RESET SECOND CHART
 
 function reset13() {
   document.querySelectorAll("#chart13 .target")
     .forEach(square => {
       square.classList.remove("active");
       square.textContent = "";
+      square.setAttribute("aria-pressed", "false");
     });
 
   document.getElementById("answer13").value = "";
   document.getElementById("status13").textContent = "";
 }
 
-
-// COPY TEXT INTO CLIPBOARD
+/*
+  COPY ANSWERS FOR CANVAS
+*/
 
 async function copyText(text, textareaId, statusId) {
   const area = document.getElementById(textareaId);
@@ -374,18 +411,18 @@ async function copyText(text, textareaId, statusId) {
 
     status.textContent =
       "Copied! Paste into your Canvas answer.";
-
   } catch (error) {
     area.focus();
     area.select();
 
     status.textContent =
-      "Select and copy the text, then paste into Canvas.";
+      "Copy this text and paste it into Canvas.";
   }
 }
 
-
-// COPY FIRST CHART ANSWERS
+/*
+  QUESTION 12 ANSWERS
+*/
 
 function copy12() {
   const answers = [
@@ -407,8 +444,9 @@ function copy12() {
   );
 }
 
-
-// COPY SECOND CHART ANSWERS
+/*
+  QUESTION 13 ANSWERS
+*/
 
 function copy13() {
   const selected = [
@@ -425,8 +463,9 @@ function copy13() {
   );
 }
 
-
-// START BOTH CHARTS
+/*
+  START ACTIVITIES
+*/
 
 build12();
 build13();
