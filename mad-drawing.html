@@ -8,172 +8,330 @@ content="width=device-width, initial-scale=1">
 <title>MAB Drawing Board</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 10px;
-  background: white;
-}
-.toolbar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-button {
-  padding: 12px 18px;
-  font-size: 16px;
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  background: #f5f5f5;
-  cursor: pointer;
-}
-button.active {
-  background: #ddd0f4;
-  border: 2px solid #7553ae;
-}
-canvas {
-  display: block;
-  width: 100%;
-  height: 380px;
-  border: 2px solid #aaa;
-  border-radius: 8px;
-  background: white;
-  touch-action: none;
-  box-sizing: border-box;
-}
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 10px;
+    background: white;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    padding: 12px 18px;
+    font-size: 16px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    background: #f5f5f5;
+    cursor: pointer;
+  }
+
+  button.active {
+    background: #ddd0f4;
+    border: 2px solid #7553ae;
+  }
+
+  button:focus-visible {
+    outline: 3px solid #7553ae;
+    outline-offset: 2px;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 380px;
+    border: 2px solid #aaa;
+    border-radius: 8px;
+    background: white;
+    touch-action: none;
+    cursor: crosshair;
+  }
 </style>
 </head>
 
 <body>
 
 <div class="toolbar">
-  <button id="pencil" class="active">
+  <button id="pencil" class="active" type="button">
     Pencil
   </button>
-  <button id="eraser">
+
+  <button id="eraser" type="button">
     Eraser
   </button>
-  <button id="clear">
+
+  <button id="clear" type="button">
     Clear drawing
   </button>
 </div>
 
-<canvas id="board"></canvas>
+<canvas id="board" aria-label="Interactive drawing board">
+</canvas>
 
 <script>
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
 
-let drawing = false;
+const pencilButton = document.getElementById("pencil");
+const eraserButton = document.getElementById("eraser");
+const clearButton = document.getElementById("clear");
+
 let tool = "pencil";
+let drawing = false;
+let activePointer = null;
 let lastX = 0;
 let lastY = 0;
 
-function resizeCanvas() {
-  const old = document.createElement("canvas");
-  old.width = canvas.width;
-  old.height = canvas.height;
+// Store drawing strokes so resizing does not erase work.
+let strokes = [];
+let currentStroke = null;
 
-  if (canvas.width && canvas.height) {
-    old.getContext("2d").drawImage(canvas, 0, 0);
+let boardWidth = 0;
+let boardHeight = 0;
+
+// Resize drawing surface.
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+
+  const width = Math.max(1, rect.width - 4);
+  const height = Math.max(1, rect.height - 4);
+
+  if (width === boardWidth && height === boardHeight) {
+    return;
   }
 
-  const rect = canvas.getBoundingClientRect();
+  boardWidth = width;
+  boardHeight = height;
+
   const scale = window.devicePixelRatio || 1;
 
-  canvas.width = rect.width * scale;
-  canvas.height = rect.height * scale;
+  canvas.width = Math.round(rect.width * scale);
+  canvas.height = Math.round(rect.height * scale);
 
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
 
-  if (old.width && old.height) {
-    ctx.drawImage(
-      old, 0, 0,
-      rect.width, rect.height
-    );
-  }
+  redraw();
 }
 
-resizeCanvas();
-
-function position(event) {
+// Get pointer position.
+function getPosition(event) {
   const rect = canvas.getBoundingClientRect();
+
   return {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top
   };
 }
 
-canvas.addEventListener("pointerdown", event => {
-  drawing = true;
-  canvas.setPointerCapture(event.pointerId);
+// Draw one stroke.
+function renderStroke(stroke) {
+  if (!stroke || stroke.points.length === 0) {
+    return;
+  }
 
-  const p = position(event);
+  const points = stroke.points;
+
+  ctx.save();
+
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (stroke.tool === "eraser") {
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 24;
+  } else {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 4;
+  }
+
+  if (points.length === 1) {
+    ctx.beginPath();
+    ctx.arc(
+      points[0].x,
+      points[0].y,
+      ctx.lineWidth / 2,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// Redraw all stored strokes.
+function redraw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  strokes.forEach(renderStroke);
+
+  if (currentStroke) {
+    renderStroke(currentStroke);
+  }
+}
+
+// Start drawing.
+canvas.addEventListener("pointerdown", event => {
+  if (drawing) return;
+
+  if (event.pointerType === "mouse" && event.button !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+
+  drawing = true;
+  activePointer = event.pointerId;
+
+  try {
+    canvas.setPointerCapture(event.pointerId);
+  } catch (error) {
+    // Continue if pointer capture is unavailable.
+  }
+
+  const p = getPosition(event);
+
   lastX = p.x;
   lastY = p.y;
 
-  ctx.beginPath();
-  ctx.fillStyle =
-    tool === "eraser" ? "white" : "black";
-  ctx.arc(
-    p.x, p.y,
-    tool === "eraser" ? 12 : 2,
-    0, Math.PI * 2
-  );
-  ctx.fill();
+  currentStroke = {
+    tool: tool,
+    points: [p]
+  };
+
+  redraw();
 });
 
+// Continue drawing.
 canvas.addEventListener("pointermove", event => {
+  if (!drawing || event.pointerId !== activePointer) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const p = getPosition(event);
+
+  lastX = p.x;
+  lastY = p.y;
+
+  currentStroke.points.push(p);
+
+  redraw();
+});
+
+// Finish drawing.
+function stopDrawing(event) {
   if (!drawing) return;
 
-  const p = position(event);
+  if (event && event.pointerId !== activePointer) {
+    return;
+  }
 
-  ctx.beginPath();
-  ctx.strokeStyle =
-    tool === "eraser" ? "white" : "black";
-  ctx.lineWidth =
-    tool === "eraser" ? 24 : 4;
-
-  ctx.moveTo(lastX, lastY);
-  ctx.lineTo(p.x, p.y);
-  ctx.stroke();
-
-  lastX = p.x;
-  lastY = p.y;
-});
-
-function stopDrawing() {
   drawing = false;
+
+  if (currentStroke) {
+    strokes.push(currentStroke);
+    currentStroke = null;
+  }
+
+  if (activePointer !== null) {
+    try {
+      if (canvas.hasPointerCapture(activePointer)) {
+        canvas.releasePointerCapture(activePointer);
+      }
+    } catch (error) {
+      // Pointer may already have been released.
+    }
+  }
+
+  activePointer = null;
+
+  redraw();
 }
 
 canvas.addEventListener("pointerup", stopDrawing);
 canvas.addEventListener("pointercancel", stopDrawing);
+canvas.addEventListener("lostpointercapture", stopDrawing);
 
+// Select drawing tool.
 function setTool(selected) {
+  stopDrawing();
+
   tool = selected;
 
-  document.getElementById("pencil")
-    .classList.toggle("active", tool === "pencil");
+  pencilButton.classList.toggle(
+    "active", tool === "pencil"
+  );
 
-  document.getElementById("eraser")
-    .classList.toggle("active", tool === "eraser");
+  eraserButton.classList.toggle(
+    "active", tool === "eraser"
+  );
+
+  pencilButton.setAttribute(
+    "aria-pressed", tool === "pencil"
+  );
+
+  eraserButton.setAttribute(
+    "aria-pressed", tool === "eraser"
+  );
+
+  canvas.style.cursor =
+    tool === "eraser" ? "cell" : "crosshair";
 }
 
-document.getElementById("pencil")
-  .onclick = () => setTool("pencil");
+pencilButton.addEventListener("click", () => {
+  setTool("pencil");
+});
 
-document.getElementById("eraser")
-  .onclick = () => setTool("eraser");
+eraserButton.addEventListener("click", () => {
+  setTool("eraser");
+});
 
-document.getElementById("clear")
-  .onclick = () => {
-    ctx.clearRect(
-      0, 0, canvas.width, canvas.height
-    );
-  };
+// Clear all drawing.
+clearButton.addEventListener("click", () => {
+  stopDrawing();
+
+  strokes = [];
+  currentStroke = null;
+
+  redraw();
+});
+
+// Resize when Canvas LMS changes layout.
+const resizeObserver = new ResizeObserver(() => {
+  resizeCanvas();
+});
+
+resizeObserver.observe(canvas);
+
+window.addEventListener("resize", resizeCanvas);
+
+// Initialise.
+resizeCanvas();
+setTool("pencil");
 </script>
 
 </body>
